@@ -1,4 +1,18 @@
-import type { LatLng } from "./geo";
+import { distanceMeters, type LatLng } from "./geo";
+
+/** 估算 bbox 面積（平方公里）。 */
+export function bboxAreaKm2(bbox: [number, number, number, number]): number {
+  const [s, w, n, e] = bbox;
+  const height = distanceMeters({ lat: s, lng: w }, { lat: n, lng: w });
+  const width = distanceMeters({ lat: s, lng: w }, { lat: s, lng: e });
+  return (height * width) / 1_000_000;
+}
+
+/** 超過此面積就拒絕抓取，避免回傳過多節點凍住 UI。 */
+export const MAX_AREA_KM2 = 6;
+
+/** 道路節點數量上限，超過則均勻稀疏化。 */
+const MAX_NODES = 8000;
 
 /**
  * 透過 Overpass API 抓取指定 bounding box 內的「可步行/可跑」道路節點。
@@ -37,7 +51,14 @@ export async function fetchRoadNodes(
     elements: Array<{ type: string; lat?: number; lon?: number }>;
   };
 
-  return data.elements
+  const nodes = data.elements
     .filter((el) => el.type === "node" && el.lat != null && el.lon != null)
     .map((el) => ({ lat: el.lat!, lng: el.lon! }));
+
+  // 節點過多時均勻抽樣，避免主執行緒卡頓。
+  if (nodes.length > MAX_NODES) {
+    const step = Math.ceil(nodes.length / MAX_NODES);
+    return nodes.filter((_, i) => i % step === 0);
+  }
+  return nodes;
 }

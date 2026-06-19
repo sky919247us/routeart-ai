@@ -1,7 +1,7 @@
 import { useState } from "react";
 import MapCanvas from "./components/MapCanvas";
 import { useRoute } from "./store";
-import { fetchRoadNodes } from "./lib/overpass";
+import { fetchRoadNodes, bboxAreaKm2, MAX_AREA_KM2 } from "./lib/overpass";
 import { snapToRoad } from "./lib/snap";
 import { pathLength, type LatLng } from "./lib/geo";
 import { downloadGpx } from "./lib/gpx";
@@ -19,6 +19,13 @@ export default function App() {
 
   async function loadRoads() {
     if (!bbox) return;
+    const area = bboxAreaKm2(bbox);
+    if (area > MAX_AREA_KM2) {
+      alert(
+        `目前範圍約 ${area.toFixed(1)} km²，太大了（上限 ${MAX_AREA_KM2} km²）。\n請放大地圖到想規劃的街區再載入道路。`
+      );
+      return;
+    }
     setLoading(true);
     try {
       const nodes = await fetchRoadNodes(bbox);
