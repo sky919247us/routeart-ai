@@ -5,19 +5,23 @@
 // 提供動態抓取，UI 可讓使用者覆寫。
 
 export const MODEL_PREFS = {
+  // 順序依 2026-06-20 用真實 Key 實測「實際會回應」的可靠度排定：
+  // 熱門模型 (gemma/llama/qwen) 常 429 限流，故把實測穩定回應的放前面。
+
   /** 視覺任務：痛點1 圖片理解、痛點3 看地圖反推圖案。必須是多模態 (吃 image)。 */
   vision: [
-    "google/gemma-4-31b-it:free", // 主力：圖像輪廓理解最穩，262k context
-    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", // 備援：omni + reasoning，適合找隱藏圖案
-    "nvidia/nemotron-nano-12b-v2-vl:free", // 輕量降級：快、較不易撞限流
+    "nvidia/nemotron-nano-12b-v2-vl:free", // 主力：實測穩定回應、快、較不易限流
+    "google/gemma-4-31b-it:free", // 備援：圖像理解強、262k context（常限流）
     "google/gemma-4-26b-a4b-it:free",
     "nex-agi/nex-n2-pro:free",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", // reasoning 模型，實測常回空內容，置末
   ],
   /** 純文字：圖案命名、路線描述、提示詞邏輯。 */
   text: [
-    "meta-llama/llama-3.3-70b-instruct:free", // 主力
-    "qwen/qwen3-next-80b-a3b-instruct:free", // 備援，262k context
-    "openai/gpt-oss-120b:free",
+    "openai/gpt-oss-120b:free", // 主力：實測穩定回應
+    "meta-llama/llama-3.3-70b-instruct:free", // 備援（常限流）
+    "qwen/qwen3-next-80b-a3b-instruct:free", // 262k context（常限流）
+    "openai/gpt-oss-20b:free",
   ],
   /** 全部撞限流時的最後保底：免費自動路由。 */
   fallbackRouter: "openrouter/free",
