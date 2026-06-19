@@ -1,5 +1,7 @@
 import { useState } from "react";
 import MapCanvas from "./components/MapCanvas";
+import SettingsPanel from "./components/SettingsPanel";
+import { hasApiKey } from "./lib/openrouter";
 import { useRoute } from "./store";
 import { fetchRoadNodes, bboxAreaKm2, MAX_AREA_KM2 } from "./lib/overpass";
 import { snapToRoad } from "./lib/snap";
@@ -14,6 +16,7 @@ export default function App() {
   const [snapOn, setSnapOn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [bbox, setBbox] = useState<[number, number, number, number] | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const lengthKm = (pathLength(points) / 1000).toFixed(2);
 
@@ -79,6 +82,10 @@ export default function App() {
           匯出 GPX
         </button>
 
+        <button className="secondary" onClick={() => setShowSettings(true)}>
+          ⚙️ 設定{hasApiKey() ? "" : " ⚠️"}
+        </button>
+
         <span className="stat">
           {points.length} 點 · {lengthKm} km
           {roadNodes.length > 0 && (
@@ -92,6 +99,8 @@ export default function App() {
         onMapClick={handleClick}
         onBoundsChange={setBbox}
       />
+
+      {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
     </div>
   );
 }
