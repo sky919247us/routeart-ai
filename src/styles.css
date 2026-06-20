@@ -165,3 +165,98 @@ body,
   gap: 10px;
   margin-top: 8px;
 }
+
+/* 反推圖案面板 */
+.modal.wide {
+  width: min(860px, 94vw);
+}
+
+.pattern-body {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.pattern-art {
+  flex: 0 0 360px;
+}
+
+.pattern-art img,
+.pattern-art .placeholder {
+  width: 360px;
+  height: 360px;
+  border: 1px solid #d4d9e0;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #fff;
+}
+
+.pattern-art .placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9aa3af;
+  font-size: 13px;
+}
+
+.pattern-art small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.pattern-results {
+  flex: 1;
+  min-width: 0;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.pattern-results .busy {
+  color: #4361ee;
+  font-weight: 600;
+}
+
+.pattern-results .err-msg {
+  color: #e63946;
+}
+
+.suggestion {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.suggestion-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.suggestion-head strong {
+  font-size: 15px;
+}
+
+.suggestion-head .conf {
+  font-size: 12px;
+  background: #2a9d8f;
+  color: #fff;
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+.suggestion p {
+  margin: 0;
+  font-size: 13px;
+  color: #374151;
+}
+
+.model-tag {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #9aa3af;
+}

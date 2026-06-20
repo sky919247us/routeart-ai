@@ -1,6 +1,7 @@
 import { useState } from "react";
 import MapCanvas from "./components/MapCanvas";
 import SettingsPanel from "./components/SettingsPanel";
+import PatternPanel from "./components/PatternPanel";
 import { hasApiKey } from "./lib/openrouter";
 import { useRoute } from "./store";
 import { fetchRoadNodes, bboxAreaKm2, MAX_AREA_KM2 } from "./lib/overpass";
@@ -17,6 +18,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [bbox, setBbox] = useState<[number, number, number, number] | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPattern, setShowPattern] = useState(false);
 
   const lengthKm = (pathLength(points) / 1000).toFixed(2);
 
@@ -82,6 +84,8 @@ export default function App() {
           匯出 GPX
         </button>
 
+        <button onClick={() => setShowPattern(true)}>🔍 AI 找圖案</button>
+
         <button className="secondary" onClick={() => setShowSettings(true)}>
           ⚙️ 設定{hasApiKey() ? "" : " ⚠️"}
         </button>
@@ -101,6 +105,9 @@ export default function App() {
       />
 
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+      {showPattern && (
+        <PatternPanel bbox={bbox} onClose={() => setShowPattern(false)} />
+      )}
     </div>
   );
 }
