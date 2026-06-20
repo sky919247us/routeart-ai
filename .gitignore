@@ -8,3 +8,6 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 *.log
+
+# Windows reserved device name (誤建防護)
+nul
