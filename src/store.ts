@@ -17,5 +17,7 @@ export function useRoute() {
 
   const clear = useCallback(() => setPoints([]), []);
 
-  return { points, addPoint, undo, clear };
+  const replace = useCallback((pts: RoutePoint[]) => setPoints(pts), []);
+
+  return { points, addPoint, undo, clear, replace };
 }

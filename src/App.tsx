@@ -2,6 +2,7 @@ import { useState } from "react";
 import MapCanvas from "./components/MapCanvas";
 import SettingsPanel from "./components/SettingsPanel";
 import PatternPanel from "./components/PatternPanel";
+import ImagePanel from "./components/ImagePanel";
 import { hasApiKey } from "./lib/openrouter";
 import { useRoute } from "./store";
 import { fetchRoadNodes, bboxAreaKm2, MAX_AREA_KM2 } from "./lib/overpass";
@@ -12,13 +13,14 @@ import { downloadGpx } from "./lib/gpx";
 const TOLERANCE_METERS = 40; // 吸附容忍半徑；超過則視為空中畫線
 
 export default function App() {
-  const { points, addPoint, undo, clear } = useRoute();
+  const { points, addPoint, undo, clear, replace } = useRoute();
   const [roadNodes, setRoadNodes] = useState<LatLng[]>([]);
   const [snapOn, setSnapOn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [bbox, setBbox] = useState<[number, number, number, number] | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showPattern, setShowPattern] = useState(false);
+  const [showImage, setShowImage] = useState(false);
 
   const lengthKm = (pathLength(points) / 1000).toFixed(2);
 
@@ -84,6 +86,8 @@ export default function App() {
           匯出 GPX
         </button>
 
+        <button onClick={() => setShowImage(true)}>🖼️ 圖片轉路線</button>
+
         <button onClick={() => setShowPattern(true)}>🔍 AI 找圖案</button>
 
         <button className="secondary" onClick={() => setShowSettings(true)}>
@@ -107,6 +111,14 @@ export default function App() {
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       {showPattern && (
         <PatternPanel bbox={bbox} onClose={() => setShowPattern(false)} />
+      )}
+      {showImage && (
+        <ImagePanel
+          bbox={bbox}
+          snapTolerance={TOLERANCE_METERS}
+          onApply={replace}
+          onClose={() => setShowImage(false)}
+        />
       )}
     </div>
   );

@@ -260,3 +260,26 @@ body,
   font-size: 11px;
   color: #9aa3af;
 }
+
+.trace-preview {
+  width: 360px;
+  height: 360px;
+  border: 1px solid #d4d9e0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.field.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field.checkbox input {
+  width: auto;
+}
+
+.field.checkbox span {
+  margin: 0;
+  font-weight: 400;
+}
