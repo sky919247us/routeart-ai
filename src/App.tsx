@@ -7,6 +7,7 @@ import { hasApiKey } from "./lib/openrouter";
 import { useRoute } from "./store";
 import { fetchRoadNodes, bboxAreaKm2, MAX_AREA_KM2 } from "./lib/overpass";
 import { snapToRoad } from "./lib/snap";
+import { fetchGreenspaces, inAnyGreenspace, type Polygon } from "./lib/greenspace";
 import { pathLength, type LatLng } from "./lib/geo";
 import { downloadGpx } from "./lib/gpx";
 
@@ -15,6 +16,7 @@ const TOLERANCE_METERS = 40; // 吸附容忍半徑；超過則視為空中畫線
 export default function App() {
   const { points, addPoint, undo, clear, replace } = useRoute();
   const [roadNodes, setRoadNodes] = useState<LatLng[]>([]);
+  const [greenPolys, setGreenPolys] = useState<Polygon[]>([]);
   const [snapOn, setSnapOn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [bbox, setBbox] = useState<[number, number, number, number] | null>(null);
@@ -35,8 +37,13 @@ export default function App() {
     }
     setLoading(true);
     try {
-      const nodes = await fetchRoadNodes(bbox);
+      // 道路與綠地一起抓（綠地失敗不影響道路）
+      const [nodes, greens] = await Promise.all([
+        fetchRoadNodes(bbox),
+        fetchGreenspaces(bbox).catch(() => [] as Polygon[]),
+      ]);
       setRoadNodes(nodes);
+      setGreenPolys(greens);
       if (nodes.length === 0) {
         alert("這個範圍沒抓到道路，換個區域或放大地圖再試。");
       }
@@ -48,11 +55,13 @@ export default function App() {
   }
 
   function handleClick(latlng: LatLng) {
-    if (snapOn && roadNodes.length > 0) {
+    // 痛點4：點落在公園/草地/廣場等綠地多邊形內 → 解除道路吸附，自由連線
+    const inGreen = greenPolys.length > 0 && inAnyGreenspace(latlng, greenPolys);
+    if (snapOn && !inGreen && roadNodes.length > 0) {
       const r = snapToRoad(latlng, roadNodes, TOLERANCE_METERS);
       addPoint({ ...r.point, snapped: r.snapped });
     } else {
-      // 自由繪圖模式（之後給公園綠地用）
+      // 自由繪圖（手動關閉吸附，或落在綠地內）
       addPoint({ ...latlng, snapped: false });
     }
   }
@@ -63,7 +72,7 @@ export default function App() {
         <h1>🦕 RouteArt AI</h1>
 
         <button onClick={loadRoads} disabled={loading || !bbox}>
-          {loading ? "抓取道路中…" : "載入此範圍道路"}
+          {loading ? "抓取中…" : "載入道路＋綠地"}
         </button>
 
         <button
@@ -97,13 +106,17 @@ export default function App() {
         <span className="stat">
           {points.length} 點 · {lengthKm} km
           {roadNodes.length > 0 && (
-            <span className="hint">　已載入 {roadNodes.length} 道路節點</span>
+            <span className="hint">
+              　已載入 {roadNodes.length} 道路節點
+              {greenPolys.length > 0 && ` · ${greenPolys.length} 綠地`}
+            </span>
           )}
         </span>
       </div>
 
       <MapCanvas
         points={points}
+        greenPolys={greenPolys}
         onMapClick={handleClick}
         onBoundsChange={setBbox}
       />

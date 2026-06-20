@@ -1,9 +1,18 @@
-import { MapContainer, TileLayer, Polyline, CircleMarker, useMapEvents } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Polyline,
+  Polygon,
+  CircleMarker,
+  useMapEvents,
+} from "react-leaflet";
 import type { LatLng } from "../lib/geo";
 import type { RoutePoint } from "../store";
+import type { Polygon as GreenPolygon } from "../lib/greenspace";
 
 type Props = {
   points: RoutePoint[];
+  greenPolys: GreenPolygon[];
   onMapClick: (latlng: LatLng) => void;
   onBoundsChange: (bbox: [number, number, number, number]) => void;
 };
@@ -21,7 +30,12 @@ function MapEvents({ onMapClick, onBoundsChange }: Pick<Props, "onMapClick" | "o
   return null;
 }
 
-export default function MapCanvas({ points, onMapClick, onBoundsChange }: Props) {
+export default function MapCanvas({
+  points,
+  greenPolys,
+  onMapClick,
+  onBoundsChange,
+}: Props) {
   const positions = points.map((p) => [p.lat, p.lng] as [number, number]);
 
   return (
@@ -31,6 +45,20 @@ export default function MapCanvas({ points, onMapClick, onBoundsChange }: Props)
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <MapEvents onMapClick={onMapClick} onBoundsChange={onBoundsChange} />
+
+      {/* 綠地：可自由繪圖區（畫筆進入解除道路吸附） */}
+      {greenPolys.map((poly, i) => (
+        <Polygon
+          key={`g${i}`}
+          positions={poly.map((p) => [p.lat, p.lng] as [number, number])}
+          pathOptions={{
+            color: "#2a9d8f",
+            weight: 1,
+            fillColor: "#52e0c4",
+            fillOpacity: 0.35,
+          }}
+        />
+      ))}
 
       {/* 路線：已吸附段實線，空中畫線段虛線 */}
       {points.length > 1 &&
