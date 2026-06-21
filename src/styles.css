@@ -254,6 +254,27 @@ body,
   color: #374151;
 }
 
+.suggestion.clickable {
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.suggestion.clickable:hover {
+  border-color: #4361ee;
+}
+
+.suggestion.clickable.active {
+  border-color: #e63946;
+  background: #fff5f5;
+}
+
+.suggestion .pts {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #9aa3af;
+}
+
 .model-tag {
   display: block;
   margin-top: 8px;

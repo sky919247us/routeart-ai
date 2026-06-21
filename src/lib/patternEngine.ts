@@ -1,17 +1,23 @@
 import { chat } from "./openrouter";
 
+export type PatternPoint = { x: number; y: number }; // 正規化 0~1，原點左上
+
 export type PatternSuggestion = {
   name: string; // 圖案名稱，例如「雷龍」
   confidence: number; // 0-100
   description: string; // 它在街道網格中的位置/輪廓描述
+  points: PatternPoint[]; // 沿街道描出該圖案輪廓的點（正規化 0~1）
 };
 
 const SYSTEM_PROMPT = `你是一個專門在城市街道地圖中尋找「隱藏圖案」的視覺辨識專家（類似在雲朵中看出形狀的空想性錯視）。
 使用者會給你一張白底黑線的街道線稿圖。請仔細觀察線條的整體走向與圍出的形狀，找出 3 個最像「具體物體、動物或幾何圖形」的輪廓。
 規則：
 - 優先找有趣、適合跑步路線打卡的圖案（動物、恐龍、愛心、星星等）。
+- 每個圖案要沿著圖中實際的黑色街道線，標出 8~20 個描出該圖案輪廓的座標點。
+- 座標用正規化數值：x 與 y 皆介於 0~1，原點(0,0)在圖片左上角，x 往右增加，y 往下增加。
+- 點要依序連成圖案的輪廓（可頭尾相接形成封閉形狀）。
 - 只回傳 JSON，不要多餘文字。格式：
-{"suggestions":[{"name":"圖案名稱","confidence":0-100的整數,"description":"用繁體中文一句話描述它在圖中的位置與由哪些線條構成"}]}`;
+{"suggestions":[{"name":"圖案名稱","confidence":0-100整數,"description":"繁體中文一句話描述位置與構成","points":[{"x":0.12,"y":0.34},...]}]}`;
 
 /** 把街道線稿送進 vision 模型，回傳候選圖案。 */
 export async function findPatterns(
@@ -56,12 +62,24 @@ function parseSuggestions(raw: string): PatternSuggestion[] {
         name: String(x.name ?? "未命名"),
         confidence: Math.max(0, Math.min(100, Number(x.confidence) || 0)),
         description: String(x.description ?? ""),
+        points: parsePoints(x.points),
       }))
       .slice(0, 5);
   } catch {
     // 解析失敗：至少把原文當一條建議回傳，避免完全空白。
     return raw.trim()
-      ? [{ name: "AI 觀察", confidence: 0, description: raw.trim().slice(0, 200) }]
+      ? [{ name: "AI 觀察", confidence: 0, description: raw.trim().slice(0, 200), points: [] }]
       : [];
   }
+}
+
+function parsePoints(raw: unknown): PatternPoint[] {
+  if (!Array.isArray(raw)) return [];
+  const clamp = (v: number) => Math.max(0, Math.min(1, v));
+  return raw
+    .map((p) => {
+      const o = p as Record<string, unknown>;
+      return { x: clamp(Number(o.x)), y: clamp(Number(o.y)) };
+    })
+    .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
 }

@@ -123,7 +123,12 @@ export default function App() {
 
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       {showPattern && (
-        <PatternPanel bbox={bbox} onClose={() => setShowPattern(false)} />
+        <PatternPanel
+          bbox={bbox}
+          snapTolerance={TOLERANCE_METERS}
+          onApply={replace}
+          onClose={() => setShowPattern(false)}
+        />
       )}
       {showImage && (
         <ImagePanel
