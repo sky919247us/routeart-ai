@@ -19,5 +19,11 @@ export function useRoute() {
 
   const replace = useCallback((pts: RoutePoint[]) => setPoints(pts), []);
 
-  return { points, addPoint, undo, clear, replace };
+  const updatePoint = useCallback((index: number, latlng: LatLng) => {
+    setPoints((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, ...latlng, snapped: true } : p))
+    );
+  }, []);
+
+  return { points, addPoint, undo, clear, replace, updatePoint };
 }

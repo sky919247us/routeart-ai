@@ -3,9 +3,10 @@ import {
   TileLayer,
   Polyline,
   Polygon,
-  CircleMarker,
+  Marker,
   useMapEvents,
 } from "react-leaflet";
+import L from "leaflet";
 import type { LatLng } from "../lib/geo";
 import type { RoutePoint } from "../store";
 import type { Polygon as GreenPolygon } from "../lib/greenspace";
@@ -15,7 +16,17 @@ type Props = {
   greenPolys: GreenPolygon[];
   onMapClick: (latlng: LatLng) => void;
   onBoundsChange: (bbox: [number, number, number, number]) => void;
+  onPointDrag: (index: number, latlng: LatLng) => void;
 };
+
+// 可拖曳的小圓點圖示（吸附=藍、自由/空中畫線=橘）
+const dotIcon = (snapped: boolean) =>
+  L.divIcon({
+    className: "route-dot-wrap",
+    html: `<div class="route-dot ${snapped ? "snapped" : "free"}"></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
 
 function MapEvents({ onMapClick, onBoundsChange }: Pick<Props, "onMapClick" | "onBoundsChange">) {
   const map = useMapEvents({
@@ -35,8 +46,8 @@ export default function MapCanvas({
   greenPolys,
   onMapClick,
   onBoundsChange,
+  onPointDrag,
 }: Props) {
-  const positions = points.map((p) => [p.lat, p.lng] as [number, number]);
 
   return (
     <MapContainer center={[25.0375, 121.5637]} zoom={16} className="map" preferCanvas>
@@ -77,16 +88,18 @@ export default function MapCanvas({
           />
         ))}
 
-      {/* 節點 */}
-      {positions.map((pos, i) => (
-        <CircleMarker
+      {/* 可拖曳節點：拖動即微調路線 */}
+      {points.map((p, i) => (
+        <Marker
           key={i}
-          center={pos}
-          radius={4}
-          pathOptions={{
-            color: points[i].snapped ? "#4361ee" : "#e76f51",
-            fillColor: "#fff",
-            fillOpacity: 1,
+          position={[p.lat, p.lng]}
+          icon={dotIcon(p.snapped)}
+          draggable
+          eventHandlers={{
+            dragend: (e) => {
+              const ll = e.target.getLatLng();
+              onPointDrag(i, { lat: ll.lat, lng: ll.lng });
+            },
           }}
         />
       ))}

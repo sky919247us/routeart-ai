@@ -14,7 +14,7 @@ import { downloadGpx } from "./lib/gpx";
 const TOLERANCE_METERS = 40; // 吸附容忍半徑；超過則視為空中畫線
 
 export default function App() {
-  const { points, addPoint, undo, clear, replace } = useRoute();
+  const { points, addPoint, undo, clear, replace, updatePoint } = useRoute();
   const [roadNodes, setRoadNodes] = useState<LatLng[]>([]);
   const [greenPolys, setGreenPolys] = useState<Polygon[]>([]);
   const [snapOn, setSnapOn] = useState(true);
@@ -119,6 +119,7 @@ export default function App() {
         greenPolys={greenPolys}
         onMapClick={handleClick}
         onBoundsChange={setBbox}
+        onPointDrag={updatePoint}
       />
 
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}

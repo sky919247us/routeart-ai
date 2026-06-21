@@ -66,6 +66,25 @@ body,
   min-height: 0;
 }
 
+/* 可拖曳路線節點 */
+.route-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #4361ee;
+  box-sizing: border-box;
+  cursor: grab;
+}
+
+.route-dot.free {
+  border-color: #e76f51;
+}
+
+.leaflet-marker-draggable:active .route-dot {
+  cursor: grabbing;
+}
+
 .hint {
   font-size: 12px;
   color: #cdd5e0;
