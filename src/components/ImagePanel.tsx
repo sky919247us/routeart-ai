@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { traceImageContour, type Pt } from "../lib/imageTrace";
+import { traceImageContour, traceImageUrl, type Pt } from "../lib/imageTrace";
+import { searchImages, proxyImageUrl, type ImageResult } from "../lib/imageSearch";
 import { fetchRoadNodes, bboxAreaKm2, MAX_AREA_KM2 } from "../lib/overpass";
 import { snapToRoad } from "../lib/snap";
 import type { RoutePoint } from "../store";
@@ -12,11 +13,15 @@ type Props = {
 };
 
 export default function ImagePanel({ bbox, snapTolerance, onApply, onClose }: Props) {
+  const [tab, setTab] = useState<"upload" | "search">("search");
   const [contour, setContour] = useState<Pt[]>([]);
   const [sizeKm, setSizeKm] = useState(1.5);
   const [snap, setSnap] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("dinosaur");
+  const [results, setResults] = useState<ImageResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const previewRef = useRef<HTMLCanvasElement | null>(null);
 
   function drawPreview(pts: Pt[]) {
@@ -50,6 +55,34 @@ export default function ImagePanel({ bbox, snapTolerance, onApply, onClose }: Pr
       requestAnimationFrame(() => drawPreview(pts));
     } catch (err) {
       setError((err as Error).message);
+      setContour([]);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runSearch() {
+    if (!query.trim()) return;
+    setSearching(true);
+    setError("");
+    try {
+      setResults(await searchImages(query.trim()));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function pickResult(r: ImageResult) {
+    setError("");
+    setBusy(true);
+    try {
+      const pts = await traceImageUrl(proxyImageUrl(r.url));
+      setContour(pts);
+      requestAnimationFrame(() => drawPreview(pts));
+    } catch {
+      setError("這張圖描邊失敗（可能不是乾淨剪影），換一張試試。");
       setContour([]);
     } finally {
       setBusy(false);
@@ -115,7 +148,22 @@ export default function ImagePanel({ bbox, snapTolerance, onApply, onClose }: Pr
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal wide" onClick={(ev) => ev.stopPropagation()}>
-        <h2>🖼️ 上傳圖片轉路線</h2>
+        <h2>🖼️ 圖片轉路線</h2>
+
+        <div className="tabs">
+          <button
+            className={tab === "search" ? "on" : ""}
+            onClick={() => setTab("search")}
+          >
+            🔎 搜尋圖庫
+          </button>
+          <button
+            className={tab === "upload" ? "on" : ""}
+            onClick={() => setTab("upload")}
+          >
+            📁 上傳檔案
+          </button>
+        </div>
 
         <div className="pattern-body">
           <div className="pattern-art">
@@ -124,10 +172,41 @@ export default function ImagePanel({ bbox, snapTolerance, onApply, onClose }: Pr
           </div>
 
           <div className="pattern-results">
-            <label className="field">
-              <span>選擇圖片（剪影或透明背景效果最佳）</span>
-              <input type="file" accept="image/*" onChange={onFile} />
-            </label>
+            {tab === "search" ? (
+              <>
+                <div className="search-row">
+                  <input
+                    type="text"
+                    placeholder="搜尋圖案，例如：雷龍 / cat / heart"
+                    value={query}
+                    onChange={(ev) => setQuery(ev.target.value)}
+                    onKeyDown={(ev) => ev.key === "Enter" && runSearch()}
+                  />
+                  <button onClick={runSearch} disabled={searching}>
+                    {searching ? "搜尋中…" : "搜尋"}
+                  </button>
+                </div>
+                <div className="img-grid">
+                  {results.map((r) => (
+                    <img
+                      key={r.id}
+                      src={r.thumb}
+                      alt={r.title}
+                      title={r.title}
+                      onClick={() => pickResult(r)}
+                    />
+                  ))}
+                </div>
+                {results.length > 0 && (
+                  <small>點縮圖即可描邊（自動補 silhouette；CC 授權圖）</small>
+                )}
+              </>
+            ) : (
+              <label className="field">
+                <span>選擇圖片（剪影或透明背景效果最佳）</span>
+                <input type="file" accept="image/*" onChange={onFile} />
+              </label>
+            )}
 
             <label className="field">
               <span>放置尺寸：{sizeKm.toFixed(1)} km（地圖中心為準）</span>

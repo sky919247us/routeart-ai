@@ -7,6 +7,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
+import { useEffect } from "react";
 import type { LatLng } from "../lib/geo";
 import type { RoutePoint } from "../store";
 import type { Polygon as GreenPolygon } from "../lib/greenspace";
@@ -30,15 +31,23 @@ const dotIcon = (snapped: boolean) =>
   });
 
 function MapEvents({ onMapClick, onBoundsChange }: Pick<Props, "onMapClick" | "onBoundsChange">) {
+  const emit = (m: L.Map) => {
+    const b = m.getBounds();
+    onBoundsChange([b.getSouth(), b.getWest(), b.getNorth(), b.getEast()]);
+  };
   const map = useMapEvents({
     click(e) {
       onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
     },
     moveend() {
-      const b = map.getBounds();
-      onBoundsChange([b.getSouth(), b.getWest(), b.getNorth(), b.getEast()]);
+      emit(map);
     },
   });
+  // 地圖一就緒先回報一次範圍，免得使用者得先手動移動地圖功能才會啟用
+  useEffect(() => {
+    emit(map);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]);
   return null;
 }
 

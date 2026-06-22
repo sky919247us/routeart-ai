@@ -5,53 +5,53 @@ export type Pt = { x: number; y: number }; // 正規化 0..1
 
 const SIZE = 256; // 處理解析度，平衡品質與速度
 
-/** 讀檔並二值化，回傳 {fg:boolean[], size}。fg[y*size+x]=是否前景。 */
-async function loadBinary(file: File): Promise<{ fg: boolean[]; size: number }> {
-  const url = URL.createObjectURL(file);
-  try {
-    const img = await new Promise<HTMLImageElement>((res, rej) => {
-      const im = new Image();
-      im.onload = () => res(im);
-      im.onerror = () => rej(new Error("圖片載入失敗"));
-      im.src = url;
-    });
-    const c = document.createElement("canvas");
-    c.width = SIZE;
-    c.height = SIZE;
-    const ctx = c.getContext("2d")!;
-    // 等比置中縮放
-    const scale = Math.min(SIZE / img.width, SIZE / img.height);
-    const dw = img.width * scale;
-    const dh = img.height * scale;
-    ctx.drawImage(img, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
-    const data = ctx.getImageData(0, 0, SIZE, SIZE).data;
+/** 載入圖片元素（檔案或跨域網址）。 */
+function loadImageEl(src: string, crossOrigin?: boolean): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    if (crossOrigin) im.crossOrigin = "anonymous";
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error("圖片載入失敗"));
+    im.src = src;
+  });
+}
 
-    // 判斷是否有 alpha 通道（透明背景圖）
-    let hasAlpha = false;
-    for (let i = 3; i < data.length; i += 4) {
-      if (data[i] < 250) {
-        hasAlpha = true;
-        break;
-      }
-    }
+/** 把已載入的圖片二值化（前景=不透明或深色）。 */
+function binarize(img: HTMLImageElement): { fg: boolean[]; size: number } {
+  const c = document.createElement("canvas");
+  c.width = SIZE;
+  c.height = SIZE;
+  const ctx = c.getContext("2d")!;
+  // 等比置中縮放
+  const scale = Math.min(SIZE / img.width, SIZE / img.height);
+  const dw = img.width * scale;
+  const dh = img.height * scale;
+  ctx.drawImage(img, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
+  const data = ctx.getImageData(0, 0, SIZE, SIZE).data;
 
-    const fg: boolean[] = new Array(SIZE * SIZE);
-    for (let p = 0; p < SIZE * SIZE; p++) {
-      const r = data[p * 4];
-      const g = data[p * 4 + 1];
-      const b = data[p * 4 + 2];
-      const a = data[p * 4 + 3];
-      if (hasAlpha) {
-        fg[p] = a > 128; // 透明背景：不透明處為前景
-      } else {
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-        fg[p] = lum < 128; // 無 alpha：深色為前景(剪影)
-      }
+  // 判斷是否有 alpha 通道（透明背景圖）
+  let hasAlpha = false;
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] < 250) {
+      hasAlpha = true;
+      break;
     }
-    return { fg, size: SIZE };
-  } finally {
-    URL.revokeObjectURL(url);
   }
+
+  const fg: boolean[] = new Array(SIZE * SIZE);
+  for (let p = 0; p < SIZE * SIZE; p++) {
+    const r = data[p * 4];
+    const g = data[p * 4 + 1];
+    const b = data[p * 4 + 2];
+    const a = data[p * 4 + 3];
+    if (hasAlpha) {
+      fg[p] = a > 128; // 透明背景：不透明處為前景
+    } else {
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      fg[p] = lum < 128; // 無 alpha：深色為前景(剪影)
+    }
+  }
+  return { fg, size: SIZE };
 }
 
 /** Moore 鄰域邊界追蹤，取從左上掃到的第一個前景所屬外輪廓。 */
@@ -135,9 +135,8 @@ function perpDist(p: Pt, a: Pt, b: Pt): number {
   return Math.abs((p.x - a.x) * dy - (p.y - a.y) * dx) / len;
 }
 
-/** 對外主函式：上傳圖片 → 簡化後的輪廓點（正規化 0..1，y 向下）。 */
-export async function traceImageContour(file: File): Promise<Pt[]> {
-  const { fg, size } = await loadBinary(file);
+function contourFromImage(img: HTMLImageElement): Pt[] {
+  const { fg, size } = binarize(img);
   const raw = traceBoundary(fg, size);
   if (raw.length < 8) throw new Error("無法從圖片找出輪廓，請改用對比明顯的剪影或透明背景圖。");
   // 目標控制在 ~60 點：先用較小 epsilon，過多再加大
@@ -148,4 +147,19 @@ export async function traceImageContour(file: File): Promise<Pt[]> {
     out = simplify(raw, eps);
   }
   return out;
+}
+
+/** 上傳檔案 → 輪廓點。 */
+export async function traceImageContour(file: File): Promise<Pt[]> {
+  const url = URL.createObjectURL(file);
+  try {
+    return contourFromImage(await loadImageEl(url));
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** 跨域圖片網址（已透過代理） → 輪廓點。 */
+export async function traceImageUrl(proxiedUrl: string): Promise<Pt[]> {
+  return contourFromImage(await loadImageEl(proxiedUrl, true));
 }

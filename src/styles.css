@@ -309,6 +309,75 @@ body,
   background: #fff;
 }
 
+/* 圖片轉路線：分頁 + 搜尋 + 縮圖網格 */
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.tabs button {
+  border: 1px solid #d4d9e0;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tabs button.on {
+  background: #4361ee;
+  color: #fff;
+  border-color: #4361ee;
+}
+
+.search-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.search-row input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #ccd2da;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.search-row button {
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 14px;
+  background: #4361ee;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.img-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.img-grid img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.img-grid img:hover {
+  border-color: #4361ee;
+}
+
 .field.checkbox {
   display: flex;
   align-items: center;
