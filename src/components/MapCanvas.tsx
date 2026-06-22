@@ -14,6 +14,7 @@ import type { Polygon as GreenPolygon } from "../lib/greenspace";
 type Props = {
   points: RoutePoint[];
   greenPolys: GreenPolygon[];
+  initialCenter: [number, number];
   onMapClick: (latlng: LatLng) => void;
   onBoundsChange: (bbox: [number, number, number, number]) => void;
   onPointDrag: (index: number, latlng: LatLng) => void;
@@ -47,10 +48,11 @@ export default function MapCanvas({
   onMapClick,
   onBoundsChange,
   onPointDrag,
+  initialCenter,
 }: Props) {
 
   return (
-    <MapContainer center={[25.0375, 121.5637]} zoom={16} className="map" preferCanvas>
+    <MapContainer center={initialCenter} zoom={16} className="map" preferCanvas>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

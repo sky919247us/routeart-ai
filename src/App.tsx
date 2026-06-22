@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MapCanvas from "./components/MapCanvas";
 import SettingsPanel from "./components/SettingsPanel";
 import PatternPanel from "./components/PatternPanel";
@@ -10,8 +10,13 @@ import { snapToRoad } from "./lib/snap";
 import { fetchGreenspaces, inAnyGreenspace, type Polygon } from "./lib/greenspace";
 import { pathLength, type LatLng } from "./lib/geo";
 import { downloadGpx } from "./lib/gpx";
+import { readRouteFromHash, buildShareUrl, routeCenter } from "./lib/share";
 
 const TOLERANCE_METERS = 40; // 吸附容忍半徑；超過則視為空中畫線
+const DEFAULT_CENTER: [number, number] = [25.0375, 121.5637];
+
+// 開啟時若網址帶分享路線，先解析出來（決定地圖初始中心）
+const initialRoute = readRouteFromHash();
 
 export default function App() {
   const { points, addPoint, undo, clear, replace, updatePoint } = useRoute();
@@ -25,6 +30,28 @@ export default function App() {
   const [showImage, setShowImage] = useState(false);
 
   const lengthKm = (pathLength(points) / 1000).toFixed(2);
+
+  // 載入分享連結中的路線（僅開啟時一次）
+  useEffect(() => {
+    if (initialRoute && initialRoute.length > 0) replace(initialRoute);
+  }, [replace]);
+
+  const initialCenter: [number, number] = (() => {
+    const c = initialRoute && routeCenter(initialRoute);
+    return c ? [c.lat, c.lng] : DEFAULT_CENTER;
+  })();
+
+  async function share() {
+    if (points.length < 1) return;
+    const url = buildShareUrl(points);
+    history.replaceState(null, "", url);
+    try {
+      await navigator.clipboard.writeText(url);
+      alert("已複製分享連結到剪貼簿！\n貼給朋友，他們打開就會看到這條路線。");
+    } catch {
+      prompt("複製這個分享連結：", url);
+    }
+  }
 
   async function loadRoads() {
     if (!bbox) return;
@@ -88,6 +115,9 @@ export default function App() {
         <button className="secondary" onClick={clear} disabled={points.length === 0}>
           清除
         </button>
+        <button onClick={share} disabled={points.length < 1}>
+          🔗 分享連結
+        </button>
         <button
           onClick={() => downloadGpx(points)}
           disabled={points.length < 2}
@@ -117,6 +147,7 @@ export default function App() {
       <MapCanvas
         points={points}
         greenPolys={greenPolys}
+        initialCenter={initialCenter}
         onMapClick={handleClick}
         onBoundsChange={setBbox}
         onPointDrag={updatePoint}
