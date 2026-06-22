@@ -15,7 +15,8 @@ export async function fetchWays(
     [out:json][timeout:25];
     (
       way["highway"]
-        ["highway"!~"motorway|motorway_link|trunk|trunk_link|construction|proposed|service"]
+        ["highway"!~"motorway|motorway_link|trunk|trunk_link|construction|proposed|raceway"]
+        ["area"!="yes"]
         (${s},${w},${n},${e});
     );
     out geom;
@@ -46,7 +47,7 @@ export async function fetchWays(
 export function renderLineArt(
   ways: Way[],
   bbox: [number, number, number, number],
-  size = 768
+  size = 1024
 ): string {
   const [s, w, n, e] = bbox;
   const canvas = document.createElement("canvas");
@@ -56,7 +57,7 @@ export function renderLineArt(
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, size, size);
   ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
 
